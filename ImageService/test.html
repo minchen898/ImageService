@@ -1,0 +1,186 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title></title>
+    <script type="text/javascript" src="js/imageservice_client.js"></script>
+    <script>
+        function uploadFile() {
+            var file = document.getElementById('files').files[0];
+            var reader = new FileReader();
+
+            reader.onload = (
+              function (theFile) {
+                  return function (e) {
+                      var base64_string = e.target.result.split(',')[1];
+                      uploadImage(base64_string, getCutSettingObject(), getSizeSettingObject(), null, showUploadPreview);
+                  };
+              })(file);
+
+            reader.readAsDataURL(file);
+        }
+
+        function uploadByUrl() {
+            var url = document.getElementById('txtUploadImageUrl').value;
+            uploadImageByUrl(url, getCutSettingObject(), getSizeSettingObject(), 'ResizeFirst', showUploadPreview);
+        }
+
+        function getCutSettingObject() {
+            if (document.getElementById('cbCut').checked) {
+                return generateCutSetting(
+                    document.getElementById('txtCutWidth').value,
+                    document.getElementById('txtHeight').value,
+                    document.getElementById('comboCutPosition').value,
+                    document.getElementById('txtCutX').value,
+                    document.getElementById('txtCutY').value,
+                    document.getElementById('txtCutRate').value);
+            } else {
+                return null;
+            }
+        }
+
+        function getSizeSettingObject() {
+            if (document.getElementById('cbSize').checked) {
+                return generateSizeSetting(
+                    document.getElementById('txtSizeWidth').value,
+                    document.getElementById('txtSizeHeight').value,
+                    document.getElementById('comboSizeOption').value);
+            } else {
+                return null;
+            }
+        }
+
+        function showUploadPreview(url) {
+            document.getElementById('imgUploadPreview').src = url;
+        }
+
+        function previewImage() {
+            var imageUrl = document.getElementById('txtImageUrl').value;
+            var size = parseInt(document.getElementById('txtPreviewSize').value);
+            var option = document.getElementById('comboOption').value;
+            calculateResizeRate(imageUrl, size, size, option,
+                function (rate) {
+                    var divPreview = document.getElementById('divPreview');
+                    var img = document.getElementById('imgPreview');
+                    imgPreview.src = "";
+                    divPreview.style.height = size.toString() + 'px';
+                    divPreview.style.width = size.toString() + 'px';
+                    imgPreview.onload = function () {
+                        this.removeAttribute('width');
+                        this.removeAttribute('height');
+                        var width = this.clientWidth * rate;
+                        var height = this.clientHeight * rate;
+                        this.width = width;
+                        this.height = height;
+                    }
+                    imgPreview.src = imageUrl;
+                }
+            );
+        }
+
+        function showTextImage() {
+            var text = document.getElementById('txtImageText').value;
+            var imageSize = {
+                'Width': document.getElementById('txtTextWidth').value,
+                'Height': document.getElementById('txtTextHeight').value
+            };
+            var font = document.getElementById('comboFont').value;
+            //var styles = 'Bold';
+            var color = document.getElementById('comboColor').value;
+
+            generateTextImage(text, font, 0, null, color, imageSize,
+                function (image) {
+                    divTextImage.style.width = imageSize.Width.toString() + 'px';
+                    divTextImage.style.height = imageSize.Height.toString() + 'px';
+                    document.getElementById('imgText').src = 'data:image/png;base64,' + image;
+                }
+            );
+        }
+    </script>
+</head>
+<body>
+    <div>
+        <input type="file" id="files" />
+        <input type="button" id="btnUpload" value="Upload" onclick="uploadFile()" /> OR
+        <br />
+        Image URL: <input type="text" id="txtUploadImageUrl" />
+        <input type="button" id="btnUploadByURL" value="Upload" onclick="uploadByUrl()" />
+        <br />
+        <input type="checkbox" id="cbCut" value="Cut" onchange="document.getElementById('divCutSetting').style.display = (this.checked? 'block': 'none');" />Cut Setting
+        <div id="divCutSetting" style="display: none;">
+            Width:<input type="text" id="txtCutWidth" value="300"/> Height:<input type="text" id="txtHeight" value="200"/><br />
+            Position:
+            <select id="comboCutPosition" onchange="document.getElementById('divCutCustom').style.display = (this.value == 'Custom'? 'block': 'none');">
+                <option value="LeftTop">Left Top</option>
+                <option value="LeftMiddle">Left Middle</option>
+                <option value="LeftBottom">Left Bottom</option>
+                <option value="CenterTop">Center Top</option>
+                <option value="CenterMiddle">Center Middle</option>
+                <option value="CenterBottom">Center Bottom</option>
+                <option value="RightTop">Right Top</option>
+                <option value="RightMiddle">Right Middle</option>
+                <option value="RightBottom">Right Bottom</option>
+                <option value="Custom">Custom</option>
+            </select>
+            <div id="divCutCustom" style="display: none;">
+                X:<input type="text" id="txtCutX" value="150"/> Y:<input type="text" id="txtCutY" value="100"/><br />
+                Preview Rate:<input type="text" id="txtCutRate" value="1"/>
+            </div>
+        </div>
+        <br />
+        <input type="checkbox" id="cbSize" value="Resize" onchange="document.getElementById('divSizeSetting').style.display = (this.checked? 'block': 'none');" />Size Setting
+        <div id="divSizeSetting" style="display: none;">
+            <select id="comboSizeOption">
+                <option value="Fit">Fit the frame</option>
+                <option value="Fill">Fill the frame</option>
+            </select><br />
+            Width:<input type="text" id="txtSizeWidth" value="300"/> Height:<input type="text" id="txtSizeHeight" value="200"/>
+        </div>
+        <div>
+            <img id="imgUploadPreview" />
+        </div>
+    </div>
+    <div>
+        Image URL: <input type="text" id="txtImageUrl" value="https://lh4.googleusercontent.com/iZsdNFtfRtXELkAxqI-tV-aWwKVksfoXOBII52nJoAEe=w1117-h678-no" /><br />
+        Preview Size: <input type="text" id="txtPreviewSize" value="400" /><br />
+        Option: 
+        <select id="comboOption">
+            <option value="Fit">Fit the frame</option>
+            <option value="Fill">Fill the frame</option>
+        </select>
+        <input type="button" id="btnPreview" value="Preview" onclick="previewImage()" />
+        <div id="divPreview" style="border:solid">
+            <img id="imgPreview" />
+        </div>
+    </div>
+    <div>
+        Text: <input type="text" id="txtImageText" value="Test String" /><br />
+        Width:<input type="text" id="txtTextWidth" value="450"/> Height:<input type="text" id="txtTextHeight" value="200"/><br />
+        Font:
+        <select id="comboFont">
+            <option value="Arial">Arial</option>
+            <option value="Centaur">Centaur</option>
+            <option value="Courier New">Courier New</option>
+            <option value="Palatino Linotype">Palatino Linotype</option>
+            <option value="Times New Roman">Times New Roman</option>
+            <option value="新細明體">新細明體</option>
+            <option value="標楷體">標楷體</option>
+            <option value="微軟正黑體">微軟正黑體</option>
+        </select><br />
+        Color:
+        <select id="comboColor">
+            <option value="White">White</option>
+            <option value="Black">Black</option>
+            <option value="Yellow">Yellow</option>
+            <option value="Blue">Blue</option>
+            <option value="Red">Red</option>
+            <option value="Green">Green</option>
+            <option value="Pink">Pink</option>
+        </select><br />
+        <input type="button" id="btnGenerateTextImage" value="Generate Text Image" onclick="showTextImage()" />
+        <div id="divTextImage" style="background-color: darkgray">
+            <img id="imgText" />
+        </div>
+    </div>
+</body>
+</html>
